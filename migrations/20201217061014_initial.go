@@ -11,14 +11,18 @@ func init() {
 			CREATE TABLE "users" (
 				"id" bigserial,
 				"email" text NOT NULL UNIQUE,
-				"name" text NOT NULL,
+				"mobile" text NOT NULL UNIQUE,
 				"password" text NOT NULL,
+				"first_name" text NOT NULL,
+				"last_name" text NOT NULL,
+				"image_url" text NOT NULL,
+				"address" text NOT NULL,
 				"active" boolean NOT NULL,
 				"created_at" timestamptz NOT NULL,
 				"updated_at" timestamptz NOT NULL,
 				"deleted_at" timestamptz,
 				PRIMARY KEY ("id"),
-				UNIQUE ("email")
+				UNIQUE ("email", "mobile")
 			)
 		`)
 		return err
