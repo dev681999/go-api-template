@@ -1,0 +1,141 @@
+openapi: "3.0.2"
+info:
+  title: Go API Template
+  version: "1.0.0"
+servers:
+  - url: "http://localhost:8000/api/v1"
+
+security:
+  - bearerAuth: []
+
+paths:
+  /user/register:
+    post:
+      operationId: "registerUser"
+      tags:
+        - "User"
+      description: "Register User"
+      security: []
+      requestBody:
+        required: true
+        description: "Registration Request"
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRegistrationRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /user/login:
+    post:
+      operationId: "loginUser"
+      tags:
+        - "User"
+      description: "Login User"
+      security: []
+      requestBody:
+        required: true
+        description: "Login Request"
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserLoginRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  schemas:
+    UserRegistrationRequest:
+      type: object
+      required:
+        - email
+        - first_name
+        - last_name
+        - password
+        - mobile
+        - address
+      properties:
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        password:
+          type: string
+        mobile:
+          type: string
+        address:
+          type: string
+
+    UserLoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    UserLoginResponse:
+      type: object
+      required:
+        - token
+        - first_name
+        - last_name
+      properties:
+        token:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+
+    Status:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

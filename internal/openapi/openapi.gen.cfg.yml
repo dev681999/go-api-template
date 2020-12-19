@@ -1,0 +1,8 @@
+output: openapi.gen.go
+package: openapi
+generate:
+  - types
+  - skip-prune
+  - server
+  - spec
+  - skip-prune
