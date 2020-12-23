@@ -11,10 +11,11 @@ import (
 // Config is config for the application
 type Config struct {
 	Server struct {
-		Host   string `yaml:"host"`
-		Port   string `yaml:"port"`
-		Env    string `yaml:"env"`
-		JWTKey string `yaml:"jwtKey"`
+		Host          string `yaml:"host"`
+		Port          string `yaml:"port"`
+		Env           string `yaml:"env"`
+		JWTKey        string `yaml:"jwtKey"`
+		ActivationURL string `yaml:"activationUrl"`
 	} `yaml:"server"`
 	DB struct {
 		Host     string `yaml:"host"`
@@ -45,6 +46,10 @@ func New(cfgFile string) (*Config, error) {
 	err = yaml.NewDecoder(file).Decode(cfg)
 	if err != nil {
 		return cfg, fmt.Errorf("yaml decoder error : %v", err)
+	}
+
+	if cfg.Server.ActivationURL == "" {
+		cfg.Server.ActivationURL = fmt.Sprintf("http://%s:%s/api/v1/user/activate", cfg.Server.Host, cfg.Server.Port)
 	}
 
 	return cfg, nil

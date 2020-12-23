@@ -9,8 +9,11 @@ import (
 )
 
 var (
-	lockServerInterfaceMockLoginUser    sync.RWMutex
-	lockServerInterfaceMockRegisterUser sync.RWMutex
+	lockServerInterfaceMockActivateUser      sync.RWMutex
+	lockServerInterfaceMockLoginUser         sync.RWMutex
+	lockServerInterfaceMockRegisterUser      sync.RWMutex
+	lockServerInterfaceMockUpdateUserProfile sync.RWMutex
+	lockServerInterfaceMockUserProfile       sync.RWMutex
 )
 
 // Ensure, that ServerInterfaceMock does implement ServerInterface.
@@ -23,11 +26,20 @@ var _ ServerInterface = &ServerInterfaceMock{}
 //
 //         // make and configure a mocked ServerInterface
 //         mockedServerInterface := &ServerInterfaceMock{
+//             ActivateUserFunc: func(ctx echo.Context, params ActivateUserParams) error {
+// 	               panic("mock out the ActivateUser method")
+//             },
 //             LoginUserFunc: func(ctx echo.Context) error {
 // 	               panic("mock out the LoginUser method")
 //             },
 //             RegisterUserFunc: func(ctx echo.Context) error {
 // 	               panic("mock out the RegisterUser method")
+//             },
+//             UpdateUserProfileFunc: func(ctx echo.Context) error {
+// 	               panic("mock out the UpdateUserProfile method")
+//             },
+//             UserProfileFunc: func(ctx echo.Context) error {
+// 	               panic("mock out the UserProfile method")
 //             },
 //         }
 //
@@ -36,14 +48,30 @@ var _ ServerInterface = &ServerInterfaceMock{}
 //
 //     }
 type ServerInterfaceMock struct {
+	// ActivateUserFunc mocks the ActivateUser method.
+	ActivateUserFunc func(ctx echo.Context, params ActivateUserParams) error
+
 	// LoginUserFunc mocks the LoginUser method.
 	LoginUserFunc func(ctx echo.Context) error
 
 	// RegisterUserFunc mocks the RegisterUser method.
 	RegisterUserFunc func(ctx echo.Context) error
 
+	// UpdateUserProfileFunc mocks the UpdateUserProfile method.
+	UpdateUserProfileFunc func(ctx echo.Context) error
+
+	// UserProfileFunc mocks the UserProfile method.
+	UserProfileFunc func(ctx echo.Context) error
+
 	// calls tracks calls to the methods.
 	calls struct {
+		// ActivateUser holds details about calls to the ActivateUser method.
+		ActivateUser []struct {
+			// Ctx is the ctx argument value.
+			Ctx echo.Context
+			// Params is the params argument value.
+			Params ActivateUserParams
+		}
 		// LoginUser holds details about calls to the LoginUser method.
 		LoginUser []struct {
 			// Ctx is the ctx argument value.
@@ -54,7 +82,52 @@ type ServerInterfaceMock struct {
 			// Ctx is the ctx argument value.
 			Ctx echo.Context
 		}
+		// UpdateUserProfile holds details about calls to the UpdateUserProfile method.
+		UpdateUserProfile []struct {
+			// Ctx is the ctx argument value.
+			Ctx echo.Context
+		}
+		// UserProfile holds details about calls to the UserProfile method.
+		UserProfile []struct {
+			// Ctx is the ctx argument value.
+			Ctx echo.Context
+		}
 	}
+}
+
+// ActivateUser calls ActivateUserFunc.
+func (mock *ServerInterfaceMock) ActivateUser(ctx echo.Context, params ActivateUserParams) error {
+	if mock.ActivateUserFunc == nil {
+		panic("ServerInterfaceMock.ActivateUserFunc: method is nil but ServerInterface.ActivateUser was just called")
+	}
+	callInfo := struct {
+		Ctx    echo.Context
+		Params ActivateUserParams
+	}{
+		Ctx:    ctx,
+		Params: params,
+	}
+	lockServerInterfaceMockActivateUser.Lock()
+	mock.calls.ActivateUser = append(mock.calls.ActivateUser, callInfo)
+	lockServerInterfaceMockActivateUser.Unlock()
+	return mock.ActivateUserFunc(ctx, params)
+}
+
+// ActivateUserCalls gets all the calls that were made to ActivateUser.
+// Check the length with:
+//     len(mockedServerInterface.ActivateUserCalls())
+func (mock *ServerInterfaceMock) ActivateUserCalls() []struct {
+	Ctx    echo.Context
+	Params ActivateUserParams
+} {
+	var calls []struct {
+		Ctx    echo.Context
+		Params ActivateUserParams
+	}
+	lockServerInterfaceMockActivateUser.RLock()
+	calls = mock.calls.ActivateUser
+	lockServerInterfaceMockActivateUser.RUnlock()
+	return calls
 }
 
 // LoginUser calls LoginUserFunc.
@@ -116,5 +189,67 @@ func (mock *ServerInterfaceMock) RegisterUserCalls() []struct {
 	lockServerInterfaceMockRegisterUser.RLock()
 	calls = mock.calls.RegisterUser
 	lockServerInterfaceMockRegisterUser.RUnlock()
+	return calls
+}
+
+// UpdateUserProfile calls UpdateUserProfileFunc.
+func (mock *ServerInterfaceMock) UpdateUserProfile(ctx echo.Context) error {
+	if mock.UpdateUserProfileFunc == nil {
+		panic("ServerInterfaceMock.UpdateUserProfileFunc: method is nil but ServerInterface.UpdateUserProfile was just called")
+	}
+	callInfo := struct {
+		Ctx echo.Context
+	}{
+		Ctx: ctx,
+	}
+	lockServerInterfaceMockUpdateUserProfile.Lock()
+	mock.calls.UpdateUserProfile = append(mock.calls.UpdateUserProfile, callInfo)
+	lockServerInterfaceMockUpdateUserProfile.Unlock()
+	return mock.UpdateUserProfileFunc(ctx)
+}
+
+// UpdateUserProfileCalls gets all the calls that were made to UpdateUserProfile.
+// Check the length with:
+//     len(mockedServerInterface.UpdateUserProfileCalls())
+func (mock *ServerInterfaceMock) UpdateUserProfileCalls() []struct {
+	Ctx echo.Context
+} {
+	var calls []struct {
+		Ctx echo.Context
+	}
+	lockServerInterfaceMockUpdateUserProfile.RLock()
+	calls = mock.calls.UpdateUserProfile
+	lockServerInterfaceMockUpdateUserProfile.RUnlock()
+	return calls
+}
+
+// UserProfile calls UserProfileFunc.
+func (mock *ServerInterfaceMock) UserProfile(ctx echo.Context) error {
+	if mock.UserProfileFunc == nil {
+		panic("ServerInterfaceMock.UserProfileFunc: method is nil but ServerInterface.UserProfile was just called")
+	}
+	callInfo := struct {
+		Ctx echo.Context
+	}{
+		Ctx: ctx,
+	}
+	lockServerInterfaceMockUserProfile.Lock()
+	mock.calls.UserProfile = append(mock.calls.UserProfile, callInfo)
+	lockServerInterfaceMockUserProfile.Unlock()
+	return mock.UserProfileFunc(ctx)
+}
+
+// UserProfileCalls gets all the calls that were made to UserProfile.
+// Check the length with:
+//     len(mockedServerInterface.UserProfileCalls())
+func (mock *ServerInterfaceMock) UserProfileCalls() []struct {
+	Ctx echo.Context
+} {
+	var calls []struct {
+		Ctx echo.Context
+	}
+	lockServerInterfaceMockUserProfile.RLock()
+	calls = mock.calls.UserProfile
+	lockServerInterfaceMockUserProfile.RUnlock()
 	return calls
 }

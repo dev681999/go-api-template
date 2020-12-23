@@ -8,15 +8,17 @@ import (
 	"compress/gzip"
 	"encoding/base64"
 	"fmt"
+	"net/http"
 	"strings"
 
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/labstack/echo/v4"
 )
 
 // Error defines model for Error.
 type Error struct {
-	Code    int    `json:"code"`
+	Error   string `json:"error"`
 	Message string `json:"message"`
 }
 
@@ -38,6 +40,26 @@ type UserLoginResponse struct {
 	Token     string `json:"token"`
 }
 
+// UserProfile defines model for UserProfile.
+type UserProfile struct {
+	Address   string `json:"address"`
+	Email     string `json:"email"`
+	FirstName string `json:"first_name"`
+	ImageUrl  string `json:"image_url"`
+	LastName  string `json:"last_name"`
+	Mobile    string `json:"mobile"`
+}
+
+// UserProfileUpdateRequest defines model for UserProfileUpdateRequest.
+type UserProfileUpdateRequest struct {
+	Address   *string `json:"address,omitempty"`
+	Email     *string `json:"email,omitempty"`
+	FirstName *string `json:"first_name,omitempty"`
+	ImageUrl  *string `json:"image_url,omitempty"`
+	LastName  *string `json:"last_name,omitempty"`
+	Mobile    *string `json:"mobile,omitempty"`
+}
+
 // UserRegistrationRequest defines model for UserRegistrationRequest.
 type UserRegistrationRequest struct {
 	Address   string `json:"address"`
@@ -48,8 +70,18 @@ type UserRegistrationRequest struct {
 	Password  string `json:"password"`
 }
 
+// ActivateUserParams defines parameters for ActivateUser.
+type ActivateUserParams struct {
+
+	// The activation token
+	Token *string `json:"token,omitempty"`
+}
+
 // LoginUserJSONBody defines parameters for LoginUser.
 type LoginUserJSONBody UserLoginRequest
+
+// UpdateUserProfileJSONBody defines parameters for UpdateUserProfile.
+type UpdateUserProfileJSONBody UserProfileUpdateRequest
 
 // RegisterUserJSONBody defines parameters for RegisterUser.
 type RegisterUserJSONBody UserRegistrationRequest
@@ -57,14 +89,26 @@ type RegisterUserJSONBody UserRegistrationRequest
 // LoginUserRequestBody defines body for LoginUser for application/json ContentType.
 type LoginUserJSONRequestBody LoginUserJSONBody
 
+// UpdateUserProfileRequestBody defines body for UpdateUserProfile for application/json ContentType.
+type UpdateUserProfileJSONRequestBody UpdateUserProfileJSONBody
+
 // RegisterUserRequestBody defines body for RegisterUser for application/json ContentType.
 type RegisterUserJSONRequestBody RegisterUserJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
+	// (POST /user/activate)
+	ActivateUser(ctx echo.Context, params ActivateUserParams) error
+
 	// (POST /user/login)
 	LoginUser(ctx echo.Context) error
+
+	// (GET /user/profile)
+	UserProfile(ctx echo.Context) error
+
+	// (PATCH /user/profile)
+	UpdateUserProfile(ctx echo.Context) error
 
 	// (POST /user/register)
 	RegisterUser(ctx echo.Context) error
@@ -75,12 +119,52 @@ type ServerInterfaceWrapper struct {
 	Handler ServerInterface
 }
 
+// ActivateUser converts echo context to params.
+func (w *ServerInterfaceWrapper) ActivateUser(ctx echo.Context) error {
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ActivateUserParams
+	// ------------- Optional query parameter "token" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "token", ctx.QueryParams(), &params.Token)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter token: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.ActivateUser(ctx, params)
+	return err
+}
+
 // LoginUser converts echo context to params.
 func (w *ServerInterfaceWrapper) LoginUser(ctx echo.Context) error {
 	var err error
 
 	// Invoke the callback with all the unmarshalled arguments
 	err = w.Handler.LoginUser(ctx)
+	return err
+}
+
+// UserProfile converts echo context to params.
+func (w *ServerInterfaceWrapper) UserProfile(ctx echo.Context) error {
+	var err error
+
+	ctx.Set("bearerAuth.Scopes", []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.UserProfile(ctx)
+	return err
+}
+
+// UpdateUserProfile converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateUserProfile(ctx echo.Context) error {
+	var err error
+
+	ctx.Set("bearerAuth.Scopes", []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.UpdateUserProfile(ctx)
 	return err
 }
 
@@ -121,7 +205,10 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 		Handler: si,
 	}
 
+	router.POST(baseURL+"/user/activate", wrapper.ActivateUser)
 	router.POST(baseURL+"/user/login", wrapper.LoginUser)
+	router.GET(baseURL+"/user/profile", wrapper.UserProfile)
+	router.PATCH(baseURL+"/user/profile", wrapper.UpdateUserProfile)
 	router.POST(baseURL+"/user/register", wrapper.RegisterUser)
 
 }
@@ -129,16 +216,19 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/9RVUW/TQAz+K5XhMWqy8YLyNiRAAyRQN8RDVaFr4qY3krub7QyqKf8d3V3aZmq6IrEJ",
-	"8dRr7Hz+bH/35R4K2zhr0AhDfg9crLFR4fiWyJI/OLIOSTSGx4Ut0f/KxiHkoI1ghQRdAg0yq2oYZCFt",
-	"Kui6BAhvW01YQj6PEPv8RbLNt8sbLMRjXYmSlg+r/3GNx8C/MtInW2kzw9sWWQ7LYKN0PVIkAaeYf1oq",
-	"TzOIGIM3TlBhZw3jIZeVJpbvRjU4SqhWj0XF/kBzmmtMS4a1hsjHmM+w0iykRNvjs1RlScg8Su/4nP+q",
-	"68YudY1PtL8jMxlA7Qomu2YPJ9YlwFi0pGVz5S9ZHM4SFSFdtLLe/3tnqVECOXz4dg1JvJIeKUZhh7wW",
-	"cdB5YG1WNjSkxbcN7+3k4svl5BobVyvxvO6QWFsDOZxNs2nmJ2EdGuU05PBqmk3PQ0OyDqzSlpHS2usy",
-	"7NPGvZbIBWknESjIduJlAAEsyuCy3Ib6CEVdvLHlJtqHETQBTjlX6yK8ld6wNXv/8aeXhCvI4UW6N6i0",
-	"d6f04AKHKYzR2yYMVyvUYth1vHGh4/MsezJ20ThHKH3+COHZSrW1PH+51uAvh4VgOcE+Z69ByOdeo6pi",
-	"r/Wwq4WPx9VTuNhIx7c/6zPGBbCNPrMGxvxnZBDDtH+iiP5r9l9K4mHCQ8eaL7qFD5O3lxBtqe6dKU/T",
-	"2haqXluW/HWWZalyOr07g27R/Q4AAP//mt8va3YIAAA=",
+	"H4sIAAAAAAAC/+xXS2/bOBD+KwJ3j4KlJHtY6JYFtkXaAg3yQA+GEdDS2GYqkcxw5NYI9N8LkpKtxFTc",
+	"BnEeRU9RNNTMfB+/efiW5arSSoIkw7JbZvIFVNw9/o+o0D5oVBqQBLjX0L2mlQaWMUMo5Jw1MavAGD6H",
+	"gK2JGcJNLRAKlo3XB+PW2STuPlDTa8jJOjsnTrXZDv/LQULOLw3gJzUX8gxuajAUQFlxUQZRam7MN4XF",
+	"7gy8j94XO1IxWkkD27nMBBq6kryCYEIlf8hK6ivI3bn6Y3E/Vt/zUOanqGaiDOTMiwLBmGBKw9zuQCoq",
+	"PoerGstH8FCpaZvoz13aABFrR/EaYj+vHTxd6oITDIruTZEWxHkGc2EIOQklnxfmI4E8pp4HpbF2FVDJ",
+	"tjKamBnIaxS0Ordd15MzBY6AxzUtNv+9U1hxYhn78OWCxb5HW0/eytaeF0SaNdaxkDPlAAmysNl7FR2f",
+	"nkQXUOmSk81rCWiEkixjB6N0lFomlAbJtWAZOxqlo0MHiBYuq6Q2gAnPSSzt5/ZKlb/aAkyOQpP3ddye",
+	"iKwYmHPpxXBS9KytUXPkFRCgYdn4vqeLBURtPKFk1PUnYW03NeCKxcxf97p3+dkVuseJvUjfXh2cwzS1",
+	"f3IlCaSDwbUuRe5iJddGyc0stE9/I8xYxv5KNsMyaSdl0g4qR/tdCJ8/Wlb/ecJYfiQHQk15EWFbby7m",
+	"0bPHLGDG65L2H7eW8F1DTlBE0J7ZVBLLxrbS+NxqyrUkNrF2L+DSDtph9bo5HJauM7WWFvR/qlg9Gdqt",
+	"jSQA3KfXHej3JsIamj1qfHtJGZT7W5CB3mwtcwjowJ6PutXmvhL6a8+eKe/CvH6y786t8aTZZt9Nk3zx",
+	"MNuR35C2SXev71O/nzIM7moBTgJ5v1hx/lZKWdcpum0ScLhjn7Unwk27s+65b4eW3gAz/WMvIpQ/m8rr",
+	"31R2F4sBXHYrs/tV59b+LElKlfNyoQxl/6ZpmnAtkuUBaybNjwAAAP//FFHGAuQRAAA=",
 }
 
 // GetSwagger returns the Swagger specification corresponding to the generated code

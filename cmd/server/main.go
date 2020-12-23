@@ -5,6 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"go-api-template/internal/config"
+	"go-api-template/internal/mail"
+	"go-api-template/internal/mailer"
 	"go-api-template/internal/openapi"
 	"go-api-template/internal/security"
 	"go-api-template/internal/transport"
@@ -31,6 +33,8 @@ func main() {
 		logger.Fatal().Err(err).Msg("")
 	}
 
+	logger.Debug().Msgf("%+v", cfg)
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
@@ -39,13 +43,17 @@ func main() {
 		logger.Fatal().Err(err).Msg("")
 	}
 
-	addr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
-
-	e := transport.NewEchoEngine(logger)
+	ms := mail.NewService(logger, mailer.NewService(logger, "admin@admin.com", "Admin"))
 
 	userRepo := user.NewRepository(logger.With().Str("svc", "user").Str("layer", "repo").Logger(), db)
-	userSvc := user.NewService(logger.With().Str("svc", "user").Str("layer", "service").Logger(), userRepo)
-	userTransport := user.NewTransport(logger.With().Str("svc", "user").Str("layer", "transport").Logger(), userSvc, security.GenerateToken(cfg.Server.JWTKey))
+	userSvc := user.NewService(
+		logger.With().Str("svc", "user").Str("layer", "service").Logger(),
+		userRepo,
+		ms,
+		cfg.Server.JWTKey,
+		cfg.Server.ActivationURL,
+	)
+	userTransport := user.NewTransport(logger.With().Str("svc", "user").Str("layer", "transport").Logger(), userSvc)
 
 	swagger, err := openapi.GetSwagger()
 	if err != nil {
@@ -53,11 +61,29 @@ func main() {
 	}
 	swagger.Servers = nil
 
-	apiGroup := e.Group("/api")
+	addr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
 
-	apiGroup.Use(security.ValidationMiddleware(swagger, cfg.Server.JWTKey, userSvc.FindByID))
+	e := transport.NewEchoEngine(logger)
 
-	openapi.RegisterHandlersWithBaseURL(apiGroup, transport.New(userTransport), "/api/v1")
+	apiGroup := e.Group("/api/v1")
+
+	apiGroup.Use(openapi.NewPrefixEchoMiddleware("/api/v1"))
+	apiGroup.Use(security.ValidationMiddleware(swagger, userSvc))
+
+	openapi.RegisterHandlers(apiGroup, transport.New(userTransport))
+
+	/* router := openapi3filter.NewRouter().WithSwagger(swagger)
+
+	r, d, err := router.FindRoute("POST", &url.URL{
+		Scheme: "http",
+		Host:   "http://localhost:8000",
+		Path:   "/api/v1/user/register",
+	})
+	if err != nil {
+		logger.Fatal().Err(err).Msg("")
+	}
+
+	logger.Debug().Msgf("%v %v", r, d) */
 
 	var g run.Group
 	{

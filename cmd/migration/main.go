@@ -13,7 +13,7 @@ import (
 )
 
 var flagConfig = flag.String("config", "./config/local.yml", "path to the config file")
-var flagMigrations = flag.String("migrations", "./migrations", "path to the migrations folder")
+var flagMigrations = flag.String("migrations", "./cmd/migrations", "path to the migrations folder")
 
 func main() {
 	flag.Parse()

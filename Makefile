@@ -2,8 +2,11 @@ check_defined = \
 	$(if !$(value $1),, \
 		$(error Undefined $1$(if $2, ($2))))
 
-dev_server:
-	go run ./cmd/server/main.go
+dev_build:
+	go build -o ./cmd/bin/server ./cmd/server/*.go
+
+dev_server: dev_build
+	./cmd/bin/server
 
 go_tidy:
 	go mod tidy

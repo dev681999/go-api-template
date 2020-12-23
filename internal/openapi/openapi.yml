@@ -30,6 +30,57 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
+        "400":
+          description: "bad request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "bad request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /user/activate:
+    post:
+      operationId: "activateUser"
+      tags:
+        - "User"
+      description: "Activate User"
+      security: []
+      parameters:
+        - in: query
+          name: token
+          schema:
+            type: string
+          description: The activation token
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+        "400":
+          description: "bad request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "bad request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         default:
           description: unexpected error
           content:
@@ -57,7 +108,56 @@ paths:
           content:
             application/json:
               schema:
+                $ref: "#/components/schemas/UserLoginResponse"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
                 $ref: "#/components/schemas/Error"
+
+  /user/profile:
+    get:
+      operationId: "userProfile"
+      tags:
+        - "User"
+      description: "User Profile"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    patch:
+      operationId: "updateUserProfile"
+      tags:
+        - "User"
+      description: "User Profile Update"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        description: "User Profile Update Request"
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserProfileUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
         default:
           description: unexpected error
           content:
@@ -115,6 +215,45 @@ components:
         last_name:
           type: string
 
+    UserProfile:
+      type: object
+      required:
+        - email
+        - first_name
+        - last_name
+        - mobile
+        - address
+        - image_url
+      properties:
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        mobile:
+          type: string
+        address:
+          type: string
+        image_url:
+          type: string
+
+    UserProfileUpdateRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        mobile:
+          type: string
+        address:
+          type: string
+        image_url:
+          type: string
+
     Status:
       type: object
       required:
@@ -126,11 +265,11 @@ components:
     Error:
       type: object
       required:
-        - code
         - message
+        - error
       properties:
-        code:
-          type: integer
+        error:
+          type: string
         message:
           type: string
 
