@@ -10,6 +10,7 @@ type User struct {
 	tableName struct{} `pg:"users,alias:users"`
 
 	ID       int    `pg:",pk" json:"-"`
+	Role     Role   `pg:",notnull,use_zero" json:"role"`
 	Email    string `pg:",unique,notnull,use_zero" json:"email"`
 	Mobile   string `pg:",unique,notnull,use_zero" json:"mobile"`
 	Password string `pg:",notnull" json:"-"`

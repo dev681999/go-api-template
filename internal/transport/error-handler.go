@@ -19,9 +19,9 @@ func errorHandler(logger zerolog.Logger) echo.HTTPErrorHandler {
 			if he, ok := err.(*echo.HTTPError); ok {
 				if sre, ok := he.Internal.(*openapi3filter.SecurityRequirementsError); ok {
 					if saerr, ok := sre.Errors[0].(*apperr.Error); ok && saerr != nil {
-						aerr = apperr.New("transport", saerr.Reason, he.Code, nil)
+						aerr = apperr.NewWithCode("transport", saerr.Reason, he.Code, nil)
 					} else {
-						aerr = apperr.New("transport", sre.Errors[0].Error(), he.Code, nil)
+						aerr = apperr.NewWithCode("transport", sre.Errors[0].Error(), he.Code, nil)
 					}
 				} else {
 					msg, ok := he.Message.(string)
@@ -29,10 +29,10 @@ func errorHandler(logger zerolog.Logger) echo.HTTPErrorHandler {
 						msg = he.Error()
 					}
 
-					aerr = apperr.New("transport", msg, he.Code, he.Internal)
+					aerr = apperr.NewWithCode("transport", msg, he.Code, he.Internal)
 				}
 			} else {
-				aerr = apperr.New("transport", err.Error(), http.StatusInternalServerError, err)
+				aerr = apperr.NewWithCode("transport", err.Error(), http.StatusInternalServerError, err)
 			}
 		}
 		logger.Error().Str("err", err.Error()).Msg("error handler")

@@ -12,16 +12,16 @@ import (
 
 // Repository is data provider
 type Repository interface {
-	Create(ctx context.Context, u *User) (*User, *apperr.Error)
-	Update(ctx context.Context, u *User) (*User, *apperr.Error)
-	FindByEmail(ctx context.Context, email string) (*User, *apperr.Error)
-	FindByID(ctx context.Context, id int) (*User, *apperr.Error)
+	Create(ctx context.Context, u *User) (*User, error)
+	Update(ctx context.Context, u *User) (*User, error)
+	FindByEmail(ctx context.Context, email string) (*User, error)
+	FindByID(ctx context.Context, id int) (*User, error)
 }
 
 var (
-	errRepoUserAlreadyExists = apperr.New("repo", "user already exists", 0, nil)
-	errRepoUserNotFound      = apperr.New("repo", "user not found", 1, nil)
-	errRepoUnknown           = apperr.New("repo", "unkown error", 2, nil)
+	errRepoUserAlreadyExists = apperr.New("repo", "user already exists", nil)
+	errRepoUserNotFound      = apperr.New("repo", "user not found", nil)
+	errRepoUnknown           = apperr.New("repo", "unkown error", nil)
 )
 
 type repo struct {
@@ -29,7 +29,7 @@ type repo struct {
 	db     *pg.DB
 }
 
-func (r repo) Create(ctx context.Context, u *User) (*User, *apperr.Error) {
+func (r repo) Create(ctx context.Context, u *User) (*User, error) {
 	_, err := r.db.ModelContext(ctx, u).Insert()
 	if err != nil {
 		r.logger.Debug().Err(err).Msg("")
@@ -44,7 +44,7 @@ func (r repo) Create(ctx context.Context, u *User) (*User, *apperr.Error) {
 	return u, nil
 }
 
-func (r repo) Update(ctx context.Context, u *User) (*User, *apperr.Error) {
+func (r repo) Update(ctx context.Context, u *User) (*User, error) {
 	_, err := r.db.ModelContext(ctx, u).WherePK().Update()
 	if err != nil {
 		r.logger.Debug().Err(err).Msg("")
@@ -58,7 +58,7 @@ func (r repo) Update(ctx context.Context, u *User) (*User, *apperr.Error) {
 	return u, nil
 }
 
-func (r repo) FindByEmail(ctx context.Context, email string) (*User, *apperr.Error) {
+func (r repo) FindByEmail(ctx context.Context, email string) (*User, error) {
 	u := &User{}
 
 	err := r.db.ModelContext(ctx, u).Where("email = ?", email).First()
@@ -73,7 +73,7 @@ func (r repo) FindByEmail(ctx context.Context, email string) (*User, *apperr.Err
 	return u, nil
 }
 
-func (r repo) FindByID(ctx context.Context, id int) (*User, *apperr.Error) {
+func (r repo) FindByID(ctx context.Context, id int) (*User, error) {
 	u := &User{}
 
 	err := r.db.ModelContext(ctx, u).Where("id = ?", id).First()

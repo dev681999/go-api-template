@@ -10,6 +10,7 @@ import (
 
 var (
 	lockServerInterfaceMockActivateUser      sync.RWMutex
+	lockServerInterfaceMockCreateFile        sync.RWMutex
 	lockServerInterfaceMockLoginUser         sync.RWMutex
 	lockServerInterfaceMockRegisterUser      sync.RWMutex
 	lockServerInterfaceMockUpdateUserProfile sync.RWMutex
@@ -28,6 +29,9 @@ var _ ServerInterface = &ServerInterfaceMock{}
 //         mockedServerInterface := &ServerInterfaceMock{
 //             ActivateUserFunc: func(ctx echo.Context, params ActivateUserParams) error {
 // 	               panic("mock out the ActivateUser method")
+//             },
+//             CreateFileFunc: func(ctx echo.Context) error {
+// 	               panic("mock out the CreateFile method")
 //             },
 //             LoginUserFunc: func(ctx echo.Context) error {
 // 	               panic("mock out the LoginUser method")
@@ -51,6 +55,9 @@ type ServerInterfaceMock struct {
 	// ActivateUserFunc mocks the ActivateUser method.
 	ActivateUserFunc func(ctx echo.Context, params ActivateUserParams) error
 
+	// CreateFileFunc mocks the CreateFile method.
+	CreateFileFunc func(ctx echo.Context) error
+
 	// LoginUserFunc mocks the LoginUser method.
 	LoginUserFunc func(ctx echo.Context) error
 
@@ -71,6 +78,11 @@ type ServerInterfaceMock struct {
 			Ctx echo.Context
 			// Params is the params argument value.
 			Params ActivateUserParams
+		}
+		// CreateFile holds details about calls to the CreateFile method.
+		CreateFile []struct {
+			// Ctx is the ctx argument value.
+			Ctx echo.Context
 		}
 		// LoginUser holds details about calls to the LoginUser method.
 		LoginUser []struct {
@@ -127,6 +139,37 @@ func (mock *ServerInterfaceMock) ActivateUserCalls() []struct {
 	lockServerInterfaceMockActivateUser.RLock()
 	calls = mock.calls.ActivateUser
 	lockServerInterfaceMockActivateUser.RUnlock()
+	return calls
+}
+
+// CreateFile calls CreateFileFunc.
+func (mock *ServerInterfaceMock) CreateFile(ctx echo.Context) error {
+	if mock.CreateFileFunc == nil {
+		panic("ServerInterfaceMock.CreateFileFunc: method is nil but ServerInterface.CreateFile was just called")
+	}
+	callInfo := struct {
+		Ctx echo.Context
+	}{
+		Ctx: ctx,
+	}
+	lockServerInterfaceMockCreateFile.Lock()
+	mock.calls.CreateFile = append(mock.calls.CreateFile, callInfo)
+	lockServerInterfaceMockCreateFile.Unlock()
+	return mock.CreateFileFunc(ctx)
+}
+
+// CreateFileCalls gets all the calls that were made to CreateFile.
+// Check the length with:
+//     len(mockedServerInterface.CreateFileCalls())
+func (mock *ServerInterfaceMock) CreateFileCalls() []struct {
+	Ctx echo.Context
+} {
+	var calls []struct {
+		Ctx echo.Context
+	}
+	lockServerInterfaceMockCreateFile.RLock()
+	calls = mock.calls.CreateFile
+	lockServerInterfaceMockCreateFile.RUnlock()
 	return calls
 }
 

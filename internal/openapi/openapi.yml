@@ -165,6 +165,33 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /storage/file:
+    post:
+      operationId: "createFile"
+      tags:
+        - "Storage"
+      description: "Create File"
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadFileRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadFileResponse"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
 components:
   schemas:
     UserRegistrationRequest:
@@ -252,6 +279,44 @@ components:
         address:
           type: string
         image_url:
+          type: string
+
+    UploadFileRequest:
+      type: object
+      required:
+        - filename
+        - type
+      properties:
+        filename:
+          type: string
+        type:
+          $ref: "#/components/schemas/FileType"
+
+    FileType:
+      type: string
+      enum:
+        - "image"
+        - "video"
+
+    UploadStatus:
+      type: string
+      enum:
+        - "pending"
+        - "uploaded"
+        - "failed"
+
+    UploadFileResponse:
+      type: object
+      required:
+        - id
+        - filename
+        - presigned_url
+      properties:
+        id:
+          type: string
+        filename:
+          type: string
+        presigned_url:
           type: string
 
     Status:

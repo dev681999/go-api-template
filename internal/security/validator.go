@@ -18,8 +18,8 @@ type (
 
 // Errors
 var (
-	ErrJWTMissing = apperr.New("transport", "missing or malformed jwt", http.StatusBadRequest, nil)
-	ErrJWTInvalid = apperr.New("transport", "invalid or expired jwt", http.StatusUnauthorized, nil)
+	ErrJWTMissing = apperr.NewWithCode("transport", "missing or malformed jwt", http.StatusBadRequest, nil)
+	ErrJWTInvalid = apperr.NewWithCode("transport", "invalid or expired jwt", http.StatusUnauthorized, nil)
 )
 
 // Defaults

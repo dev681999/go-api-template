@@ -18,7 +18,7 @@ var flagMigrations = flag.String("migrations", "./cmd/migrations", "path to the 
 func main() {
 	flag.Parse()
 
-	logger := log.Setup()
+	logger := log.Setup(log.EnvLocal)
 
 	cfg, err := config.New(*flagConfig)
 	if err != nil {

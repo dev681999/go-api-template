@@ -15,11 +15,21 @@ const (
 	ClaimTypePasswordReset
 )
 
+// Role is role of the user
+type Role uint
+
+// Roles
+const (
+	RoleAdmin Role = iota
+	RoleUser
+)
+
 // Claims is a jwt claim
 type Claims struct {
 	FirstName string    `json:"first_name"`
 	LastName  string    `json:"last_name"`
 	UserID    int       `json:"user_id"`
+	Role      Role      `json:"role"`
 	Type      ClaimType `json:"claim_type"`
 	Email     string    `json:"-"`
 	Mobile    string    `json:"-"`

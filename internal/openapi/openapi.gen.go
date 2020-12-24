@@ -22,10 +22,42 @@ type Error struct {
 	Message string `json:"message"`
 }
 
+// FileType defines model for FileType.
+type FileType string
+
+// List of FileType
+const (
+	FileType_image FileType = "image"
+	FileType_video FileType = "video"
+)
+
 // Status defines model for Status.
 type Status struct {
 	Message string `json:"message"`
 }
+
+// UploadFileRequest defines model for UploadFileRequest.
+type UploadFileRequest struct {
+	Filename string   `json:"filename"`
+	Type     FileType `json:"type"`
+}
+
+// UploadFileResponse defines model for UploadFileResponse.
+type UploadFileResponse struct {
+	Filename     string `json:"filename"`
+	Id           string `json:"id"`
+	PresignedUrl string `json:"presigned_url"`
+}
+
+// UploadStatus defines model for UploadStatus.
+type UploadStatus string
+
+// List of UploadStatus
+const (
+	UploadStatus_failed   UploadStatus = "failed"
+	UploadStatus_pending  UploadStatus = "pending"
+	UploadStatus_uploaded UploadStatus = "uploaded"
+)
 
 // UserLoginRequest defines model for UserLoginRequest.
 type UserLoginRequest struct {
@@ -70,6 +102,9 @@ type UserRegistrationRequest struct {
 	Password  string `json:"password"`
 }
 
+// CreateFileJSONBody defines parameters for CreateFile.
+type CreateFileJSONBody UploadFileRequest
+
 // ActivateUserParams defines parameters for ActivateUser.
 type ActivateUserParams struct {
 
@@ -86,6 +121,9 @@ type UpdateUserProfileJSONBody UserProfileUpdateRequest
 // RegisterUserJSONBody defines parameters for RegisterUser.
 type RegisterUserJSONBody UserRegistrationRequest
 
+// CreateFileRequestBody defines body for CreateFile for application/json ContentType.
+type CreateFileJSONRequestBody CreateFileJSONBody
+
 // LoginUserRequestBody defines body for LoginUser for application/json ContentType.
 type LoginUserJSONRequestBody LoginUserJSONBody
 
@@ -97,6 +135,9 @@ type RegisterUserJSONRequestBody RegisterUserJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+
+	// (POST /storage/file)
+	CreateFile(ctx echo.Context) error
 
 	// (POST /user/activate)
 	ActivateUser(ctx echo.Context, params ActivateUserParams) error
@@ -117,6 +158,15 @@ type ServerInterface interface {
 // ServerInterfaceWrapper converts echo contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler ServerInterface
+}
+
+// CreateFile converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateFile(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.CreateFile(ctx)
+	return err
 }
 
 // ActivateUser converts echo context to params.
@@ -205,6 +255,7 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 		Handler: si,
 	}
 
+	router.POST(baseURL+"/storage/file", wrapper.CreateFile)
 	router.POST(baseURL+"/user/activate", wrapper.ActivateUser)
 	router.POST(baseURL+"/user/login", wrapper.LoginUser)
 	router.GET(baseURL+"/user/profile", wrapper.UserProfile)
@@ -216,19 +267,22 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
+	"M6sirhUAAA==",
 }
 
 // GetSwagger returns the Swagger specification corresponding to the generated code

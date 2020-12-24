@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	apperr "go-api-template/internal/error"
 	"go-api-template/internal/mail"
@@ -15,27 +16,27 @@ import (
 
 // Service is a service provider
 type Service interface {
-	Create(ctx context.Context, u *User) (*User, *apperr.Error)
-	Update(ctx context.Context, userID int, update *Update) (*User, *apperr.Error)
+	Create(ctx context.Context, u *User) (*User, error)
+	Update(ctx context.Context, userID int, update *Update) (*User, error)
 
-	FindByID(ctx context.Context, id int) (*User, *apperr.Error)
-	FindByEmail(ctx context.Context, email string) (*User, *apperr.Error)
+	FindByID(ctx context.Context, id int) (*User, error)
+	FindByEmail(ctx context.Context, email string) (*User, error)
 
-	ValidateByEmailAndPassword(ctx context.Context, email, password string) (*User, *apperr.Error)
+	ValidateByEmailAndPassword(ctx context.Context, email, password string) (*User, error)
 
-	GenerateToken(ctx context.Context, u *User, claimType ClaimType) (string, *apperr.Error)
+	GenerateToken(ctx context.Context, u *User, claimType ClaimType) (string, error)
 	ParseTokenWithClaims(ctx context.Context, auth string) (interface{}, bool, error)
 }
 
 // Errors that can occur in the service
 var (
-	ErrInvalidPassword   = apperr.New("service", "invalid password", 0, nil)
-	ErrInternalService   = apperr.New("service", "internal service error", 1, nil)
-	ErrUserAlreadyExists = apperr.New("service", "user already exists", 2, nil)
-	ErrUserNotFound      = apperr.New("service", "user not found", 3, nil)
-	ErrWrongCredentials  = apperr.New("service", "wrong credentials", 4, nil)
-	ErrUserNotActive     = apperr.New("service", "user not active", 5, nil)
-	ErrInvalidToken      = apperr.New("service", "invalid token", 6, nil)
+	ErrInvalidPassword   = apperr.New("service", "invalid password", nil)
+	ErrInternalService   = apperr.New("service", "internal service error", nil)
+	ErrUserAlreadyExists = apperr.New("service", "user already exists", nil)
+	ErrUserNotFound      = apperr.New("service", "user not found", nil)
+	ErrWrongCredentials  = apperr.New("service", "wrong credentials", nil)
+	ErrUserNotActive     = apperr.New("service", "user not active", nil)
+	ErrInvalidToken      = apperr.New("service", "invalid token", nil)
 )
 
 type service struct {
@@ -49,7 +50,7 @@ type service struct {
 	pass.Hash
 }
 
-func (s service) Create(ctx context.Context, u *User) (*User, *apperr.Error) {
+func (s service) Create(ctx context.Context, u *User) (*User, error) {
 	{
 		password, err := s.Generate(u.Password)
 		if err != nil {
@@ -63,7 +64,7 @@ func (s service) Create(ctx context.Context, u *User) (*User, *apperr.Error) {
 	u, err := s.repo.Create(ctx, u)
 	if err != nil {
 		s.logger.Debug().Err(err).Msg("")
-		if err.IsMatchesCode(errRepoUserAlreadyExists) {
+		if errors.Is(err, errRepoUserAlreadyExists) {
 			return nil, ErrUserAlreadyExists.CloneWithInner(err)
 		}
 
@@ -96,7 +97,7 @@ func (s service) Create(ctx context.Context, u *User) (*User, *apperr.Error) {
 	return u, nil
 }
 
-func (s service) Update(ctx context.Context, userID int, update *Update) (*User, *apperr.Error) {
+func (s service) Update(ctx context.Context, userID int, update *Update) (*User, error) {
 	u, err := s.findByID(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -107,7 +108,7 @@ func (s service) Update(ctx context.Context, userID int, update *Update) (*User,
 	u, err = s.repo.Update(ctx, u)
 	if err != nil {
 		s.logger.Debug().Err(err).Msg("")
-		if err.IsMatchesCode(errRepoUserNotFound) {
+		if errors.Is(err, errRepoUserNotFound) {
 			return nil, ErrUserNotFound.CloneWithInner(err)
 		}
 
@@ -117,11 +118,11 @@ func (s service) Update(ctx context.Context, userID int, update *Update) (*User,
 	return u, nil
 }
 
-func (s service) FindByEmail(ctx context.Context, email string) (*User, *apperr.Error) {
+func (s service) FindByEmail(ctx context.Context, email string) (*User, error) {
 	u, err := s.repo.FindByEmail(ctx, email)
 	if err != nil {
 		s.logger.Debug().Err(err).Msg("")
-		if err.IsMatchesCode(errRepoUserNotFound) {
+		if errors.Is(err, errRepoUserNotFound) {
 			return nil, ErrUserNotFound.CloneWithInner(err)
 		}
 
@@ -133,11 +134,11 @@ func (s service) FindByEmail(ctx context.Context, email string) (*User, *apperr.
 	return u, nil
 }
 
-func (s service) ValidateByEmailAndPassword(ctx context.Context, email, password string) (*User, *apperr.Error) {
+func (s service) ValidateByEmailAndPassword(ctx context.Context, email, password string) (*User, error) {
 	u, err := s.repo.FindByEmail(ctx, email)
 	if err != nil {
 		s.logger.Debug().Err(err).Msg("")
-		if err.IsMatchesCode(errRepoUserNotFound) {
+		if errors.Is(err, errRepoUserNotFound) {
 			return nil, ErrUserNotFound.CloneWithInner(err)
 		}
 
@@ -153,11 +154,11 @@ func (s service) ValidateByEmailAndPassword(ctx context.Context, email, password
 	return u, nil
 }
 
-func (s service) findByID(ctx context.Context, id int) (*User, *apperr.Error) {
+func (s service) findByID(ctx context.Context, id int) (*User, error) {
 	u, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		s.logger.Debug().Err(err).Msg("")
-		if err.IsMatchesCode(errRepoUserNotFound) {
+		if errors.Is(err, errRepoUserNotFound) {
 			return nil, ErrUserNotFound.CloneWithInner(err)
 		}
 
@@ -167,7 +168,7 @@ func (s service) findByID(ctx context.Context, id int) (*User, *apperr.Error) {
 	return u, nil
 }
 
-func (s service) FindByID(ctx context.Context, id int) (*User, *apperr.Error) {
+func (s service) FindByID(ctx context.Context, id int) (*User, error) {
 	u, err := s.findByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -178,7 +179,7 @@ func (s service) FindByID(ctx context.Context, id int) (*User, *apperr.Error) {
 	return u, nil
 }
 
-func (s service) GenerateToken(ctx context.Context, u *User, claimType ClaimType) (string, *apperr.Error) {
+func (s service) GenerateToken(ctx context.Context, u *User, claimType ClaimType) (string, error) {
 	var expiresAt int64
 
 	switch claimType {
@@ -192,6 +193,7 @@ func (s service) GenerateToken(ctx context.Context, u *User, claimType ClaimType
 		FirstName: u.FirstName,
 		LastName:  u.LastName,
 		UserID:    u.ID,
+		Role:      u.Role,
 		Type:      claimType,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expiresAt,
