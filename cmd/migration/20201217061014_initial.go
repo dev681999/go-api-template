@@ -10,6 +10,7 @@ func init() {
 		_, err := db.Exec(`
 			CREATE TABLE "users" (
 				"id" bigserial,
+				"role" bigint NOT NULL,
 				"email" text NOT NULL UNIQUE,
 				"mobile" text NOT NULL UNIQUE,
 				"password" text NOT NULL,
